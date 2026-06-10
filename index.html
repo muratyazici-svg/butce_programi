@@ -19,7 +19,7 @@
         <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-white tracking-tight">Finansal Takip Paneli</h1>
-                <p class="text-slate-400 text-sm mt-1">Gelir ve giderlerinizi anlık olarak izleyin.</p>
+                <p class="text-slate-400 text-sm mt-1">Gelir ve giderlerinizi anlık olarak izleyin (Kalıcı Hafıza Aktif).</p>
             </div>
             <button onclick="toggleModal(true)" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer text-sm flex items-center gap-2 self-start md:self-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
@@ -125,19 +125,27 @@
     </div>
 
     <script>
-        // Başlangıç Örnek Verileri
-        let transactions = [
-            { id: 1, desc: "Yazılım Danışmanlık Bedeli", cat: "Hizmet", date: "2026-06-08", type: "income", amount: 15000 },
-            { id: 2, desc: "Ofis Kira Ödemesi", cat: "Kira / Sabit", date: "2026-06-05", type: "expense", amount: 8500 },
-            { id: 3, desc: "X Firması Hakediş Ödemesi", cat: "Ticari Faaliyet", date: "2026-06-02", type: "income", amount: 30250 }
-        ];
+        // LocalStorage'dan verileri çek, eğer boşsa örnek verileri yükle
+        let transactions = JSON.parse(localStorage.getItem('my_transactions'));
+        
+        if (!transactions) {
+            transactions = [
+                { id: 1, desc: "Yazılım Danışmanlık Bedeli", cat: "Hizmet", date: "2026-06-08", type: "income", amount: 15000 },
+                { id: 2, desc: "Ofis Kira Ödemesi", cat: "Kira / Sabit", date: "2026-06-05", type: "expense", amount: 8500 },
+                { id: 3, desc: "X Firması Hakediş Ödemesi", cat: "Ticari Faaliyet", date: "2026-06-02", type: "income", amount: 30250 }
+            ];
+            saveToStorage();
+        }
 
-        // Pencereyi Açma / Kapatma Fonksiyonu
+        // Verileri hafızaya kaydetme fonksiyonu
+        function saveToStorage() {
+            localStorage.setItem('my_transactions', JSON.stringify(transactions));
+        }
+
         function toggleModal(show) {
             const modal = document.getElementById('transaction-modal');
             if (show) {
                 modal.classList.remove('hidden');
-                // Bugünün tarihini otomatik seçtir
                 document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
             } else {
                 modal.classList.add('hidden');
@@ -145,18 +153,15 @@
             }
         }
 
-        // Parayı TL formatına çeviren yardımcı fonksiyon
         function formatMoney(amount) {
             return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
         }
 
-        // Tarihi GG.AA.YYYY formatına çeviren fonksiyon
         function formatDate(dateString) {
             const [year, month, day] = dateString.split('-');
             return `${day}.${month}.${year}`;
         }
 
-        // Arayüzü ve Hesaplamaları Güncelleyen Ana Fonksiyon
         function updateUI() {
             const rowsContainer = document.getElementById('transaction-rows');
             rowsContainer.innerHTML = '';
@@ -190,13 +195,11 @@
                 rowsContainer.appendChild(row);
             });
 
-            // Kartları güncelle
             document.getElementById('total-income').innerText = formatMoney(totalIncome);
             document.getElementById('total-expense').innerText = formatMoney(totalExpense);
             document.getElementById('net-balance').innerText = formatMoney(totalIncome - totalExpense);
         }
 
-        // Yeni İşlem Ekleme Fonksiyonu
         function addTransaction(event) {
             event.preventDefault();
 
@@ -207,7 +210,7 @@
             const amount = parseFloat(document.getElementById('form-amount').value);
 
             const newTx = {
-                id: Date.now(), // Benzersiz ID üretimi
+                id: Date.now(),
                 desc,
                 cat,
                 date,
@@ -215,20 +218,20 @@
                 amount
             };
 
-            transactions.unshift(newTx); // Yeni işlemi listenin başına ekle
+            transactions.unshift(newTx);
+            saveToStorage(); // Hafızayı güncelle
             updateUI();
             toggleModal(false);
         }
 
-        // İşlem Silme Fonksiyonu
         function deleteTransaction(id) {
             if(confirm("Bu işlemi silmek istediğinize emin misiniz?")) {
                 transactions = transactions.filter(t => t.id !== id);
+                saveToStorage(); // Hafızayı güncelle
                 updateUI();
             }
         }
 
-        // Sayfa ilk açıldığında verileri yükle
         updateUI();
     </script>
 </body>
